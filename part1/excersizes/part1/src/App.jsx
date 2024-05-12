@@ -1,52 +1,54 @@
 const Header = (props) => {
-  console.log(props)
+  console.log('Header function called');
   return (
     <div>
       <h1>{props.course}</h1>
     </div>
-  )
-}
+  );
+};
 
-const Content = (props) => {
-  console.log(props)
-  return(
+const Part = (props) => {
+  console.log('Part function called');
+  return (
     <div>
-      <p>{props.courseName} {props.assignmentNumber}</p>
+      <p>{props.partName} {props.exerciseCount}</p>
     </div>
-  )
-}
+  );
+};
 
 const Total = (props) => {
-  console.log(props)
-  return(
+  console.log('Total function called');
+  return (
     <div>
       <p>Number of exercises {props.total}</p>
     </div>
-  )
-}
+  );
+};
 
-
-
+const Content = () => {
+  console.log('Content function called');
+  return (
+    <div>
+      <Part partName="Fundamentals of React" exerciseCount={10} />
+      <Part partName="Using props to pass data" exerciseCount={7} />
+      <Part partName="State of a component" exerciseCount={14} />
+    </div>
+  );
+};
 
 const App = () => {
-  const course = 'Half Stack application development'
-  const part1 = 'Fundamentals of React'
-  const exercises1 = 10
-  const part2 = 'Using props to pass data'
-  const exercises2 = 7
-  const part3 = 'State of a component'
-  const exercises3 = 14
+  console.log('App function called');
+  const course = 'Half Stack application development';
+
+  const totalExercises = 10 + 7 + 14;
 
   return (
     <div>
-      <Header course = {course} />
-      <Content courseName={part1} assignmentNumber={exercises1} />
-      <Content courseName={part2} assignmentNumber={exercises2} />
-      <Content courseName={part3} assignmentNumber={exercises3} />
-      <Total total = {exercises1 + exercises2 + exercises3} />
+      <Header course={course} />
+      <Content />
+      <Total total={totalExercises} />
     </div>
-  )
-}
+  );
+};
 
-
-export default App
+export default App;
