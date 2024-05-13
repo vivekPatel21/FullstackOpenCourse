@@ -1,54 +1,60 @@
 const Header = (props) => {
-  console.log('Header function called');
+  console.log("loading " + props + "...")
   return (
     <div>
       <h1>{props.course}</h1>
     </div>
-  );
-};
+  )
+}
 
-const Part = (props) => {
-  console.log('Part function called');
+const getDisplay = (name, count) => {
+  console.log("getting display " + name)
   return (
-    <div>
-      <p>{props.partName} {props.exerciseCount}</p>
-    </div>
-  );
-};
+    <p>{name} {count}</p>
+  )
+}
 
-const Total = (props) => {
-  console.log('Total function called');
-  return (
-    <div>
-      <p>Number of exercises {props.total}</p>
-    </div>
-  );
-};
+const Display = ({ name, count }) => { // Changed to object destructuring for props
+  console.log("invoking getDisplay function")
+  return getDisplay(name, count)
+}
 
-const Content = () => {
-  console.log('Content function called');
-  return (
-    <div>
-      <Part partName="Fundamentals of React" exerciseCount={10} />
-      <Part partName="Using props to pass data" exerciseCount={7} />
-      <Part partName="State of a component" exerciseCount={14} />
+const parseList = (list) => {
+  console.log("parsing list...")
+  return list.map((item, index) => (
+    <div key={index}>
+      <Display name={item.name} count={item.exercises} />
     </div>
-  );
-};
+  ));
+}
+
 
 const App = () => {
-  console.log('App function called');
-  const course = 'Half Stack application development';
+  const course = 'Half Stack application development'
+  const part1 = {
+    name: 'Fundamentals of React',
+    exercises: 10
+  }
+  const part2 = {
+    name: 'Using props to pass data',
+    exercises: 7
+  }
+  const part3 = {
+    name: 'State of a component',
+    exercises: 14
+  }
+  const total = part1.exercises + part2.exercises + part3.exercises
 
-  const totalExercises = 10 + 7 + 14;
+  const list = [part1, part2, part3]
 
   return (
     <div>
       <Header course={course} />
-      <Content />
-      <Total total={totalExercises} />
+      {/* Invoke parseList function with list and render its return value */}
+      {parseList(list)}
+      <p>Total: {total}</p>
     </div>
-  );
-};
+  )
+}
 
 export default App;
