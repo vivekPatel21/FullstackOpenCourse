@@ -1,60 +1,39 @@
-const Header = (props) => {
-  console.log("loading " + props + "...")
-  return (
-    <div>
-      <h1>{props.course}</h1>
-    </div>
-  )
+import { useState } from 'react'
+
+const handleLeftClick = () => {
+  const newClicks = { 
+    ...clicks, 
+    left: clicks.left + 1 
+  }
+  setClicks(newClicks)
 }
 
-const getDisplay = (name, count) => {
-  console.log("getting display " + name)
-  return (
-    <p>{name} {count}</p>
-  )
+const handleRightClick = () => {
+  const newClicks = { 
+    ...clicks, 
+    right: clicks.right + 1 
+  }
+  setClicks(newClicks)
 }
-
-const Display = ({ name, count }) => { // Changed to object destructuring for props
-  console.log("invoking getDisplay function")
-  return getDisplay(name, count)
-}
-
-const parseList = (list) => {
-  console.log("parsing list...")
-  return list.map((item, index) => (
-    <div key={index}>
-      <Display name={item.name} count={item.exercises} />
-    </div>
-  ));
-}
-
 
 const App = () => {
-  const course = 'Half Stack application development'
-  const part1 = {
-    name: 'Fundamentals of React',
-    exercises: 10
-  }
-  const part2 = {
-    name: 'Using props to pass data',
-    exercises: 7
-  }
-  const part3 = {
-    name: 'State of a component',
-    exercises: 14
-  }
-  const total = part1.exercises + part2.exercises + part3.exercises
+  const [value, setValue] = useState(10)
+  
 
-  const list = [part1, part2, part3]
-
+  const setToValue = (newValue) => () => {
+    console.log('value now', newValue)  // print the new value to console
+    setValue(newValue)
+  }
+  
   return (
     <div>
-      <Header course={course} />
-      {/* Invoke parseList function with list and render its return value */}
-      {parseList(list)}
-      <p>Total: {total}</p>
+      {value}
+
+      <button onClick={setToValue(1000)}>thousand</button>
+      <button onClick={setToValue(0)}>reset</button>
+      <button onClick={setToValue(value + 1)}>increment</button>
     </div>
   )
 }
 
-export default App;
+export default App
