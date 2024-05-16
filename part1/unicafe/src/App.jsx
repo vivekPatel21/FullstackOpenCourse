@@ -30,41 +30,6 @@ const DisplayNumOf = (prop) => {
   return null;
 };
 
-const CalculateTotalClicks = (prop) => {
-  console.log("calculating the total number of clicks...");
-  if (prop.good > 0 || prop.neutral > 0 || prop.bad > 0) {
-    return (
-      <div>
-        <p>Total Clicks: {prop.good + prop.neutral + prop.bad}</p>
-      </div>
-    );
-  }
-  return null;
-};
-
-const CalculateAverage = (prop) => {
-  console.log("fetching the average rating...");
-  if (prop.good > 0 || prop.neutral > 0 || prop.bad > 0) {
-    return (
-      <div>
-        <p>Average Rating: {(prop.good - prop.bad) / (prop.good + prop.neutral + prop.bad)}</p>
-      </div>
-    );
-  }
-  return null;
-};
-
-const CalculatePercentPositive = (prop) => {
-  console.log("fetching the positive percentage");
-  if (prop.good > 0 || prop.neutral > 0 || prop.bad > 0) {
-    return (
-      <div>
-        <p>Percentage positive: {(prop.good / (prop.good + prop.neutral + prop.bad)) * 100}%</p>
-      </div>
-    );
-  }
-  return null;
-};
 
 const StatisticLine = ({ title, value }) => {
   return (
@@ -91,9 +56,12 @@ const Statistics = (prop) => {
     return (
       <div>
         <Header title={prop.title} />
-        <StatisticLine title="Total Clicks" value={totalClicks} />
-        <StatisticLine title="Average Rating" value={averageRating} />
-        <StatisticLine title="Percentage Positive" value={`${positivePercentage}%`} />
+        <tr><DisplayNumOf title="good" numberOfClicks={prop.good} /></tr>
+        <tr><DisplayNumOf title="neutral" numberOfClicks={prop.neutral} /></tr>
+        <tr><DisplayNumOf title="bad" numberOfClicks={prop.bad} /> </tr>
+        <tr><StatisticLine title="Total Clicks" value={totalClicks} /></tr>
+        <tr><StatisticLine title="Average Rating" value={averageRating} /></tr>
+        <tr><StatisticLine title="Percentage Positive" value={`${positivePercentage}%`} /></tr>
       </div>
     );
   }
@@ -101,7 +69,6 @@ const Statistics = (prop) => {
 
 
 const App = () => {
-  // save clicks of each button to its own state
   const title = 'Give Feedback';
 
   const [good, setGood] = useState(0);
@@ -114,10 +81,6 @@ const App = () => {
       <Button title="good" rating={good} setMethod={setGood} />
       <Button title="neutral" rating={neutral} setMethod={setNeutral} />
       <Button title="bad" rating={bad} setMethod={setBad} />
-
-      <DisplayNumOf title="good" numberOfClicks={good} />
-      <DisplayNumOf title="neutral" numberOfClicks={neutral} />
-      <DisplayNumOf title="bad" numberOfClicks={bad} />
 
       <Statistics title={"Statistics"} good={good} neutral={neutral} bad={bad} />
     </div>
