@@ -15,6 +15,7 @@ const AnecdotesButton = ({ title, onClick }) => {
   );
 }
 
+
 const App = () => {
   const anecdotes = [
     'If it hurts, do it more often.',
@@ -29,19 +30,27 @@ const App = () => {
 
   const [selected, setSelected] = useState(0);
   const [votes, setVotes] = useState(Array(anecdotes.length).fill(0));
+  const [mostVotedIndex, setMostVotedIndex] = useState(0);
 
   const handleVote = () => {
     const newVotes = [...votes];
     newVotes[selected] += 1;
     setVotes(newVotes);
+
+    if(newVotes[selected] > newVotes[mostVotedIndex]) {
+      setMostVotedIndex(selected);
+    }
   };
 
   return (
     <div>
       <p>{anecdotes[selected]}</p>
-      <p>Has {votes[selected]} votes</p>
+      <p>Has {votes[selected]} votes</p> 
       <AnecdotesButton title="Next Anecdote" onClick={() => setSelected(RandomNum(anecdotes))} />
       <AnecdotesButton title="Vote" onClick={handleVote} />
+      <h2>Anecdote with most votes</h2>
+      <p>{anecdotes[mostVotedIndex]}</p>
+      <p>Has {votes[mostVotedIndex]} votes</p>
     </div>
   );
 }
