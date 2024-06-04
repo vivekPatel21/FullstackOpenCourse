@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 const Filter = ({ value, onChange }) => {
@@ -61,17 +61,21 @@ Persons.propTypes = {
 };
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456', id: 1 },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
-  ]);
-
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
   const [searchName, setSearchName] = useState('');
-  const [filteredPersons, setFilteredPersons] = useState([...persons]);
+  const [filteredPersons, setFilteredPersons] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/persons')
+      .then(response => response.json())
+      .then(data => {
+        setPersons(data);
+        setFilteredPersons(data);
+      })
+      .catch(error => console.error('Error fetching data', error));
+  }, []);
 
   const handleNameChange = (event) => {
     setNewName(event.target.value);
@@ -83,13 +87,37 @@ const App = () => {
 
   const handleSearchChange = (event) => {
     setSearchName(event.target.value);
+    if (event.target.value === '') {
+      setFilteredPersons(persons);
+    } else {
+      const filtered = persons.filter(person =>
+        person.name.toLowerCase().includes(event.target.value.toLowerCase())
+      );
+      setFilteredPersons(filtered);
+    }
   };
 
-  const addPerson = (event) => {
+  const addPerson = (newPerson) => {
+    fetch('http://localhost:3001/persons', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newPerson)
+    })
+    .then(response => response.json())
+    .then(data => {
+      const updatedPersons = persons.concat(data);
+      setPersons(updatedPersons);
+      setFilteredPersons(updatedPersons);
+    })
+    .catch(error => console.error('Error adding person:', error));
+  };
+
+  const handleAddPerson = (event) => {
     event.preventDefault();
     const newPerson = { name: newName, number: newNumber, id: persons.length + 1 };
-    setPersons(persons.concat(newPerson));
-    setFilteredPersons(persons.concat(newPerson));
+    addPerson(newPerson);
     setNewNumber('');
     setNewName('');
   };
@@ -103,32 +131,21 @@ const App = () => {
     } else if (duplicateNumber) {
       alert(`${newNumber} is already added to phonebook`);
     } else {
-      addPerson();
+      handleAddPerson(event);
     }
-  };
-
-  const SearchTarget = (event) => {
-    event.preventDefault();
-    const filteredPersons = persons.filter(person =>
-      person.name.toLowerCase().includes(searchName.toLowerCase())
-    );
-    setFilteredPersons(filteredPersons);
   };
 
   return (
     <div>
       <h2>Phonebook</h2>
-      <form onSubmit={SearchTarget}>
+      <form>
         <Filter value={searchName} onChange={handleSearchChange} />
-        <div>
-          <button type="submit">Search</button>
-        </div>
       </form>
 
       <h2>Add a new number</h2>
       <form onSubmit={checkForDuplicateName}>
         <PersonForm
-          addPerson={addPerson}
+          addPerson={handleAddPerson}
           newName={newName}
           handleNameChange={handleNameChange}
           newNumber={newNumber}
