@@ -7,11 +7,17 @@ const getAll = () => {
 };
 
 const create = (newPerson) => {
-  return axios.post(baseUrl, newPerson).then(response => response.data);
+  // Ensure the ID is a string
+  const newPersonWithStringId = { ...newPerson, id: String(newPerson.id) };
+  return axios.post(baseUrl, newPersonWithStringId).then(response => response.data);
 };
 
 const remove = (id) => {
   return axios.delete(`${baseUrl}/${id}`);
 };
 
-export default { getAll, create, remove };
+const update = (id, updatedPerson) => {
+  return axios.put(`${baseUrl}/${id}`, updatedPerson).then(response => response.data);
+};
+
+export default { getAll, create, remove, update };

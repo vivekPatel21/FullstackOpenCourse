@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import personService from './personService'; // Import the service module
-import Filter from './Filter'; // Import the Filter component
-import PersonForm from './PersonForm'; // Import the PersonForm component
-import Persons from './Persons'; // Import the Persons component
+import { v4 as uuidv4 } from 'uuid';
+import personService from './personService';
+import Filter from './Filter';
+import PersonForm from './PersonForm';
+import Persons from './Persons';
 
 const App = () => {
   const [persons, setPersons] = useState([]);
@@ -42,7 +42,7 @@ const App = () => {
   };
 
   const addPerson = () => {
-    const newPerson = { name: newName, number: newNumber, id: persons.length + 1 };
+    const newPerson = { name: newName, number: newNumber, id: uuidv4() };
     personService.create(newPerson)
       .then(data => {
         const updatedPersons = persons.concat(data);
@@ -54,34 +54,39 @@ const App = () => {
       .catch(error => console.error('Error adding person:', error));
   };
 
+  const updatePerson = (id, updatedPerson) => {
+    personService.update(id, updatedPerson)
+      .then(data => {
+        const updatedPersons = persons.map(person => person.id !== id ? person : data);
+        setPersons(updatedPersons);
+        setFilteredPersons(updatedPersons);
+        setNewName('');
+        setNewNumber('');
+      })
+      .catch(error => console.error('Error updating person:', error));
+  };
+
   const handleAddPerson = (event) => {
     event.preventDefault();
-    addPerson();
+    const existingPerson = persons.find(person => person.name === newName);
+
+    if (existingPerson) {
+      if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
+        updatePerson(existingPerson.id, { ...existingPerson, number: newNumber });
+      }
+    } else {
+      addPerson();
+    }
   };
 
   const handleDelete = (id) => {
-    // Remove person from the database
     personService.remove(id)
       .then(() => {
-        // Update the state after successful deletion
         const updatedPersons = persons.filter(person => person.id !== id);
         setPersons(updatedPersons);
         setFilteredPersons(updatedPersons);
       })
       .catch(error => console.error('Error deleting person:', error));
-  };
-
-  const checkForDuplicateName = (event) => {
-    event.preventDefault();
-    const duplicateName = persons.find(person => person.name === newName);
-    const duplicateNumber = persons.find(person => person.number === newNumber);
-    if (duplicateName) {
-      alert(`${newName} is already added to phonebook`);
-    } else if (duplicateNumber) {
-      alert(`${newNumber} is already added to phonebook`);
-    } else {
-      handleAddPerson(event);
-    }
   };
 
   return (
@@ -93,7 +98,7 @@ const App = () => {
 
       <h2>Add a new number</h2>
       <PersonForm
-        addPerson={checkForDuplicateName}
+        addPerson={handleAddPerson}
         newName={newName}
         handleNameChange={handleNameChange}
         newNumber={newNumber}
