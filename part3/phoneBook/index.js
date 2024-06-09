@@ -1,6 +1,7 @@
 console.log("starting...");
 
 const express = require('express');
+const morgan = require('morgan'); // Import Morgan
 const app = express();
 
 app.use(express.json());
@@ -28,6 +29,35 @@ let data = [
     }
 ];
 
+// Create custom tokens for ID, name, and number
+morgan.token('custom-id', (req) => req.body.id || '');
+morgan.token('custom-name', (req) => req.body.name || '');
+morgan.token('custom-number', (req) => req.body.number || '');
+
+// Define a custom format that includes the tokens
+const format = ':method :url :status :response-time ms - ID: :custom-id Name: :custom-name Number: :custom-number';
+
+// Use Morgan with the custom format
+app.use(morgan((tokens, req, res) => {
+  if (req.method === 'POST') {
+    return [
+      tokens.method(req, res),
+      tokens.url(req, res),
+      tokens.status(req, res),
+      tokens['response-time'](req, res), 'ms',
+      '- ID:', tokens['custom-id'](req, res),
+      'Name:', tokens['custom-name'](req, res),
+      'Number:', tokens['custom-number'](req, res)
+    ].join(' ');
+  }
+  return [
+    tokens.method(req, res),
+    tokens.url(req, res),
+    tokens.status(req, res),
+    tokens['response-time'](req, res), 'ms'
+  ].join(' ');
+}));
+
 app.get('/api/numbers/:id', (request, response) => {
   const IDNumber = Number(request.params.id);
   const phoneNumber = data.find(phoneNumber => phoneNumber.id === IDNumber);
@@ -37,7 +67,7 @@ app.get('/api/numbers/:id', (request, response) => {
   if (phoneNumber) {
     response.json(phoneNumber);
   } else {
-    response.status(404).json({ error: `No result for ID ${IDNumber}` });
+    response.status(404).json({error: `No result for ID ${IDNumber}`});
   }
 });
 
@@ -53,13 +83,6 @@ const generateId = () => {
   return maxId + 1;
 };
 
-const generateRandomId = () => {
-  const maxID = Math.ceil(100000);
-  const minID = Math.floor(4);
-
-  return Math.floor(Math.random() * (maxId - minId + 1)+minID);
-}
-
 app.post('/api/numbers', (request, response) => {
   const person = request.body;
   
@@ -70,14 +93,15 @@ app.post('/api/numbers', (request, response) => {
   }
 
   const duplicate = data.filter(entry => entry.name === person.name);
-  if(duplicate > 0){
+
+  if (duplicate.length > 0) {
     return response.status(400).json({
-      error: 'You are not allowed to put in the same name twice!'
-    })
+      error: 'name must be unique'
+    });
   }
 
   const number = {
-    id: generateRandomId(),
+    id: generateId(),
     name: person.name,
     number: person.number,
   };
@@ -97,7 +121,7 @@ app.delete('/api/numbers/:id', (request, response) => {
   }
 
   response.status(204).end(); 
-});
+})
 
 const PORT = 3001;
 app.listen(PORT, () => {
@@ -105,7 +129,7 @@ app.listen(PORT, () => {
 });
 
 app.get('/info', (request, response) => {
-  const currentTime = new Date();
+  const currentTime = new Date(); 
   const numberOfEntries = data.length;
 
   const responseContent = `<p>Phone book has info for ${numberOfEntries} people<br></br>${currentTime}</p>`;
