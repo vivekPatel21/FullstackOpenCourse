@@ -1,77 +1,27 @@
-import { useState } from 'react';
-import PropTypes from 'prop-types';
-
-const Filter = ({ value, onChange }) => {
-  return (
-    <div>
-      Filter shown with: <input value={value} onChange={onChange} />
-    </div>
-  );
-};
-
-Filter.propTypes = {
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired
-};
-
-const PersonForm = ({ addPerson, newName, handleNameChange, newNumber, handleNumberChange }) => {
-  return (
-    <div>
-      <form onSubmit={addPerson}>
-        <div>
-          Name: <input value={newName} onChange={handleNameChange} />
-          Number: <input value={newNumber} onChange={handleNumberChange} />
-        </div>
-        <div>
-          <button type="submit">Add</button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-PersonForm.propTypes = {
-  addPerson: PropTypes.func.isRequired,
-  newName: PropTypes.string.isRequired,
-  handleNameChange: PropTypes.func.isRequired,
-  newNumber: PropTypes.string.isRequired,
-  handleNumberChange: PropTypes.func.isRequired
-};
-
-const Persons = ({ persons }) => {
-  return (
-    <div>
-      <ul>
-        {persons.map(person =>
-          <li key={person.id}>{person.name}: {person.number}</li>
-        )}
-      </ul>
-    </div>
-  );
-};
-
-Persons.propTypes = {
-  persons: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-      number: PropTypes.string.isRequired
-    })
-  ).isRequired
-};
+import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import personService from './personService';
+import Filter from './Filter';
+import PersonForm from './PersonForm';
+import Persons from './Persons';
+import Notification from './Notification';
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456', id: 1 },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
-  ]);
-
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
   const [searchName, setSearchName] = useState('');
-  const [filteredPersons, setFilteredPersons] = useState([...persons]);
+  const [filteredPersons, setFilteredPersons] = useState([]);
+  const [notification, setNotification] = useState({ message: null, type: null });
+
+  useEffect(() => {
+    personService.getAll()
+      .then(data => {
+        setPersons(data);
+        setFilteredPersons(data);
+      })
+      .catch(error => console.error('Error fetching data', error));
+  }, []);
 
   const handleNameChange = (event) => {
     setNewName(event.target.value);
@@ -83,61 +33,141 @@ const App = () => {
 
   const handleSearchChange = (event) => {
     setSearchName(event.target.value);
+    if (event.target.value === '') {
+      setFilteredPersons(persons);
+    } else {
+      const filtered = persons.filter(person =>
+        person.name.toLowerCase().includes(event.target.value.toLowerCase())
+      );
+      setFilteredPersons(filtered);
+    }
   };
 
-  const addPerson = (event) => {
-    event.preventDefault();
-    const newPerson = { name: newName, number: newNumber, id: persons.length + 1 };
-    setPersons(persons.concat(newPerson));
-    setFilteredPersons(persons.concat(newPerson));
-    setNewNumber('');
-    setNewName('');
+  const addPerson = () => {
+    const newPerson = { name: newName, number: newNumber, id: uuidv4() };
+    personService.create(newPerson)
+      .then(data => {
+        const updatedPersons = persons.concat(data);
+        setPersons(updatedPersons);
+        setFilteredPersons(updatedPersons);
+        setNewName('');
+        setNewNumber('');
+        setNotification({ message: `Added ${newName}`, type: 'success' });
+        setTimeout(() => {
+          setNotification({ message: null, type: null });
+        }, 5000);
+      })
+      .catch(error => {
+        console.error('Error adding person:', error);
+        setNotification({ message: 'Error adding person', type: 'error' });
+        setTimeout(() => {
+          setNotification({ message: null, type: null });
+        }, 5000);
+      });
   };
 
-  const checkForDuplicateName = (event) => {
+  const updatePerson = (id, updatedPerson) => {
+    personService.update(id, updatedPerson)
+      .then(data => {
+        const updatedPersons = persons.map(person => person.id !== id ? person : data);
+        setPersons(updatedPersons);
+        setFilteredPersons(updatedPersons);
+        setNewName('');
+        setNewNumber('');
+        setNotification({ message: `Updated ${updatedPerson.name}`, type: 'success' });
+        setTimeout(() => {
+          setNotification({ message: null, type: null });
+        }, 5000);
+      })
+      .catch(error => {
+        if (error.response && error.response.status === 404) {
+          setNotification({ message: `Information of ${updatedPerson.name} has already been removed from server`, type: 'error' });
+          setPersons(persons.filter(person => person.id !== id));
+          setFilteredPersons(filteredPersons.filter(person => person.id !== id));
+        } else {
+          setNotification({ message: 'Error updating person', type: 'error' });
+        }
+        setTimeout(() => {
+          setNotification({ message: null, type: null });
+        }, 5000);
+      });
+  };
+
+  const handleAddPerson = (event) => {
     event.preventDefault();
-    const duplicateName = persons.find(person => person.name === newName);
-    const duplicateNumber = persons.find(person => person.number === newNumber);
-    if (duplicateName) {
-      alert(`${newName} is already added to phonebook`);
-    } else if (duplicateNumber) {
-      alert(`${newNumber} is already added to phonebook`);
+    const existingPerson = persons.find(person => person.name === newName);
+
+    if (existingPerson) {
+      if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
+        // Check if the person still exists before updating
+        personService.getAll()
+          .then(data => {
+            const personExists = data.find(person => person.id === existingPerson.id);
+            if (personExists) {
+              updatePerson(existingPerson.id, { ...existingPerson, number: newNumber });
+            } else {
+              setNotification({ message: `Information of ${newName} has already been removed from server`, type: 'error' });
+              setPersons(data); // Update the local state to reflect the current state of the server
+              setFilteredPersons(data);
+              setTimeout(() => {
+                setNotification({ message: null, type: null });
+              }, 5000);
+            }
+          })
+          .catch(error => {
+            setNotification({ message: 'Error fetching persons from server', type: 'error' });
+            setTimeout(() => {
+              setNotification({ message: null, type: null });
+            }, 5000);
+          });
+      }
     } else {
       addPerson();
     }
   };
 
-  const SearchTarget = (event) => {
-    event.preventDefault();
-    const filteredPersons = persons.filter(person =>
-      person.name.toLowerCase().includes(searchName.toLowerCase())
-    );
-    setFilteredPersons(filteredPersons);
+  const handleDelete = (id) => {
+    const personToDelete = persons.find(person => person.id === id);
+    if (window.confirm(`Delete ${personToDelete.name}?`)) {
+      personService.remove(id)
+        .then(() => {
+          const updatedPersons = persons.filter(person => person.id !== id);
+          setPersons(updatedPersons);
+          setFilteredPersons(updatedPersons);
+          setNotification({ message: 'Person deleted', type: 'success' });
+          setTimeout(() => {
+            setNotification({ message: null, type: null });
+          }, 5000);
+        })
+        .catch(error => {
+          console.error('Error deleting person:', error);
+          setNotification({ message: 'Error deleting person', type: 'error' });
+          setTimeout(() => {
+            setNotification({ message: null, type: null });
+          }, 5000);
+        });
+    }
   };
 
   return (
     <div>
       <h2>Phonebook</h2>
-      <form onSubmit={SearchTarget}>
+      <Notification message={notification.message} type={notification.type} />
+      <form>
         <Filter value={searchName} onChange={handleSearchChange} />
-        <div>
-          <button type="submit">Search</button>
-        </div>
       </form>
 
       <h2>Add a new number</h2>
-      <form onSubmit={checkForDuplicateName}>
-        <PersonForm
-          addPerson={addPerson}
-          newName={newName}
-          handleNameChange={handleNameChange}
-          newNumber={newNumber}
-          handleNumberChange={handleNumberChange}
-        />
-      </form>
+      <PersonForm
+        addPerson={handleAddPerson}
+        newName={newName}
+        handleNameChange={handleNameChange}
+        newNumber={newNumber}
+        handleNumberChange={handleNumberChange}
+      />
 
       <h2>Numbers</h2>
-      <Persons persons={filteredPersons} />
+      <Persons persons={filteredPersons} onDelete={handleDelete} />
     </div>
   );
 };

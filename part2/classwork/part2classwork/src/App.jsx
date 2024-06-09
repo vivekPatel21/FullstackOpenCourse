@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Note from './components/Note'
+import Note from './Note'
 
 const App = (props) => {
   const [notes, setNotes] = useState(props.notes)
