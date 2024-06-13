@@ -10,5 +10,8 @@
   },
   "keywords": [],
   "author": "Vivek Patel",
-  "license": "N/A"
+  "license": "N/A",
+  "dependencies": {
+    "cors": "^2.8.5"
+  }
 }
